@@ -1,0 +1,109 @@
+generator client {
+  provider                    = "prisma-client-py"
+  recursive_type_depth        = 5
+  enable_experimental_decimal = true
+  interface                   = "asyncio"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Eventos no sistema
+model Event {
+  id                String              @id @default(uuid())
+  title             String
+  description       String?
+  venueId           String
+  schedules         EventSchedule[] // horários do evento
+  venue             Venue               @relation(fields: [venueId], references: [id]) // onde o evento ocorre
+  files             File[] // arquivos associados como imagens, documentos, etc
+  tickets           Ticket[] // ingressos disponíveis para o evento.
+  EventParticipants EventParticipants[] // lista de participantes
+
+  @@index([venueId])
+}
+
+// Informação do Participante, talvez adicionar mais coisas aqui de segurança
+model Participant {
+  id                String              @id @default(uuid())
+  name              String
+  email             String              @unique
+  password          String
+  photoId           String?
+  photo             File?
+  eventTickets      EventTicket[] // ingressos comprados pelo participante
+  EventParticipants EventParticipants[] // eventos participados pelo participante
+
+  @@index([email])
+}
+
+// Informação do local
+model Venue {
+  id       String  @id @default(uuid())
+  name     String
+  capacity Int // capacidade máxima de pessoas no local
+  address  String
+  events   Event[] // eventos que estão para ocorrer neste local
+}
+
+// Informação de algum horário do evento
+model EventSchedule {
+  id        String   @id @default(uuid())
+  eventId   String
+  startDate DateTime
+  endDate   DateTime
+  event     Event    @relation(fields: [eventId], references: [id])
+  files     File[] // arquivos associados como imagens, documentos, etc
+}
+
+// Arquivos no servidor
+model File {
+  id              String         @id @default(uuid())
+  hash            String
+  extension       String
+  mimeType        String
+  ownerId         String
+  ownerType       String // 'Event' or 'EventSchedule', 'Participant'.
+  createdAt       DateTime       @default(now())
+  Event           Event?         @relation(fields: [eventId], references: [id])
+  eventId         String?
+  EventSchedule   EventSchedule? @relation(fields: [eventScheduleId], references: [id])
+  eventScheduleId String?
+  participant     Participant?   @relation(fields: [participantId], references: [id])
+  participantId   String?        @unique
+
+  @@index([ownerId, ownerType])
+}
+
+// Ingressos no sistema [lotes]
+model Ticket {
+  id          String        @id @default(uuid())
+  eventId     String
+  price       Decimal       @db.Decimal(10, 2)
+  startDate   DateTime
+  endDate     DateTime
+  available   Int // quantidade de ingressos disponíveis
+  event       Event         @relation(fields: [eventId], references: [id])
+  EventTicket EventTicket[]
+}
+
+model EventTicket {
+  ticketId      String
+  participantId String
+  purchaseDate  DateTime
+  ticket        Ticket      @relation(fields: [ticketId], references: [id])
+  participant   Participant @relation(fields: [participantId], references: [id])
+
+  @@id([ticketId, participantId])
+}
+
+model EventParticipants {
+  participantId String
+  eventId       String
+  participant   Participant @relation(fields: [participantId], references: [id])
+  event         Event       @relation(fields: [eventId], references: [id])
+
+  @@id([participantId, eventId])
+}

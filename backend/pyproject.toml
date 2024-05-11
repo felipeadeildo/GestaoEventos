@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "eventos-backend"
+version = "0.1.0"
+description = "Backend do site de gestão de eventos proposto no NES"
+authors = ["Felipe Adeildo <oie.eu.sou.um@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+prisma = "^0.13.1"
+fastapi = "^0.111.0"
+passlib = "^1.7.4"
+python-jose = "^3.3.0"
+pydantic-settings = "^2.2.1"
+
+
+[tool.poetry.group.dev.dependencies]
+ruff = "^0.4.4"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
